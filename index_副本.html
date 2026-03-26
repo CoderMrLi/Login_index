@@ -1,0 +1,986 @@
+<!doctype html>
+<!-- 声明文档类型为HTML5 -->
+<html lang="en">
+  <head>
+    <!-- 设置字符编码为UTF-8，保证多语言显示正常 -->
+    <meta charset="UTF-8" />
+    <!-- 视口适配：宽度=device-width，初始缩放1.0，适配移动端 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 页面标题：登录 -->
+    <title>Login</title>
+    <!-- 内部样式表：页面所有样式定义 -->
+    <style>
+      /* 通用样式重置：所有元素及伪元素，盒模型为border-box，清除默认边距内边距 */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      /* 页面主体样式：苹果/微软等通用无衬线字体，100%视口高度，隐藏溢出，白色背景，黑色文字 */
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        height: 100vh;
+        overflow: hidden;
+        background: #fff;
+        color: #111;
+      }
+      /* 页面容器：网格布局，两列等宽，100%视口高度，左右分栏核心容器 */
+      .page {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        height: 100vh;
+      }
+      /* 左栏样式：相对定位，弹性列布局（垂直水平居中），内边距48px，紫灰渐变背景，白色文字，隐藏溢出 */
+      .left {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 48px;
+        background: linear-gradient(135deg, #9ca3af, #6b7280, #4b5563);
+        color: #fff;
+        overflow: hidden;
+      }
+      /* 模糊光斑通用样式：绝对定位，圆形，高斯模糊60px，取消鼠标事件（避免遮挡下层元素） */
+      .blob1,
+      .blob2 {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        pointer-events: none;
+      }
+      /* 光斑1：上右25%位置，宽高256px，浅灰透明背景，增加左栏层次感 */
+      .blob1 {
+        top: 25%;
+        right: 25%;
+        width: 256px;
+        height: 256px;
+        background: rgba(156, 163, 175, 0.2);
+      }
+      /* 光斑2：下左25%位置，宽高384px，更浅灰透明背景，与blob1形成双层光影 */
+      .blob2 {
+        bottom: 25%;
+        left: 25%;
+        width: 384px;
+        height: 384px;
+        background: rgba(209, 213, 219, 0.2);
+      }
+      /* 网格遮罩：绝对定位（占满左栏），重复线性渐变实现浅网格，取消鼠标事件，增加科技感 */
+      .grid-overlay {
+        position: absolute;
+        inset: 0; /* 等价于top/right/bottom/left:0 */
+        background-image:
+          repeating-linear-gradient(
+            0deg,
+            rgba(255, 255, 255, 0.05) 0 1px,
+            transparent 1px 20px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.05) 0 1px,
+            transparent 1px 20px
+          );
+        pointer-events: none;
+      }
+      /* 卡通形象外层容器：相对定位（层级z-index=20），弹性布局（底部对齐、水平居中），高度500px */
+      .characters-wrap {
+        position: relative;
+        z-index: 20;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        height: 500px;
+      }
+      /* 卡通形象核心容器：相对定位，宽550px高400px，所有卡通形象的父容器 */
+      .characters {
+        position: relative;
+        width: 550px;
+        height: 400px;
+      }
+      /* 单个卡通形象通用样式：绝对定位，底部对齐，过渡动画（0.7s贝塞尔曲线），变换原点为底部中心（保证倾斜时绕底部转） */
+      .char {
+        position: absolute;
+        bottom: 0;
+        transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: bottom center;
+      }
+      /* 紫色卡通形象：左70px，宽180高400，紫色背景，圆角（上左右10px），层级1（最下层） */
+      .char-purple {
+        left: 70px;
+        width: 180px;
+        height: 400px;
+        background: #6c3ff5;
+        border-radius: 10px 10px 0 0;
+        z-index: 1;
+      }
+      /* 紫色形象眼睛容器：绝对定位，弹性布局（间距32px），过渡动画（0.7s贝塞尔曲线） */
+      .char-purple .eyes-wrap {
+        position: absolute;
+        display: flex;
+        gap: 32px;
+        transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      /* 黑色卡通形象：左240px，宽120高310，深灰背景，圆角（上左右8px），层级2（在紫色上） */
+      .char-black {
+        left: 240px;
+        width: 120px;
+        height: 310px;
+        background: #2d2d2d;
+        border-radius: 8px 8px 0 0;
+        z-index: 2;
+      }
+      /* 黑色形象眼睛容器：绝对定位，弹性布局（间距24px），过渡动画（0.7s贝塞尔曲线） */
+      .char-black .eyes-wrap {
+        position: absolute;
+        display: flex;
+        gap: 24px;
+        transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      /* 橙色卡通形象：左0，宽240高200，橙色背景，半圆圆角（上左右120px），层级3（在黑色上） */
+      .char-orange {
+        left: 0;
+        width: 240px;
+        height: 200px;
+        background: #ff9b6b;
+        border-radius: 120px 120px 0 0;
+        z-index: 3;
+      }
+      /* 橙色形象眼睛容器：绝对定位，弹性布局（间距32px），过渡动画（0.2s快速淡出） */
+      .char-orange .eyes-wrap {
+        position: absolute;
+        display: flex;
+        gap: 32px;
+        transition: all 0.2s ease-out;
+      }
+      /* 黄色卡通形象：左310px，宽140高230，黄色背景，半圆圆角（上左右70px），层级4（最上层） */
+      .char-yellow {
+        left: 310px;
+        width: 140px;
+        height: 230px;
+        background: #e8d754;
+        border-radius: 70px 70px 0 0;
+        z-index: 4;
+      }
+      /* 黄色形象眼睛容器：绝对定位，弹性布局（间距24px），过渡动画（0.2s快速淡出） */
+      .char-yellow .eyes-wrap {
+        position: absolute;
+        display: flex;
+        gap: 24px;
+        transition: all 0.2s ease-out;
+      }
+      /* 黄色形象嘴巴：绝对定位，宽80高4，深灰背景，圆角4px，过渡动画（0.2s快速淡出） */
+      .char-yellow .mouth {
+        position: absolute;
+        width: 80px;
+        height: 4px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        transition: all 0.2s ease-out;
+      }
+      /* 眼球通用样式：圆形，弹性布局（水平垂直居中），隐藏溢出，高度过渡（0.15s），白色背景 */
+      .eyeball {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        transition: height 0.15s;
+        background: #fff;
+      }
+      /* 瞳孔样式：圆形，深灰背景，位移过渡（0.1s快速淡出），实现眼球跟随 */
+      .eyeball .pupil {
+        border-radius: 50%;
+        background: #2d2d2d;
+        transition: transform 0.1s ease-out;
+      }
+      /* 无眼球仅瞳孔样式：圆形，深灰背景，位移过渡（0.1s快速淡出），橙色/黄色形象用 */
+      .pupil-only {
+        border-radius: 50%;
+        background: #2d2d2d;
+        transition: transform 0.1s ease-out;
+      }
+      /* 右栏样式：弹性布局（水平垂直居中），内边距32px，白色背景，登录表单容器 */
+      .right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        background: #fff;
+      }
+      /* 表单盒子：宽度100%，最大宽度420px（限制表单最大宽度，避免大屏拉伸） */
+      .form-box {
+        width: 100%;
+        max-width: 420px;
+      }
+      /* 表单头部：文本居中，下外边距40px */
+      .form-box .header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+      /* 表单头部标题：字体30px，700粗体，字符间距-0.5px（紧凑），下外边距8px */
+      .form-box .header h1 {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+      }
+      /* 表单头部描述：浅灰文字，字体14px */
+      .form-box .header p {
+        color: #6b7280;
+        font-size: 14px;
+      }
+      /* 表单输入项容器：下外边距20px，邮箱/密码项通用 */
+      .field {
+        margin-bottom: 20px;
+      }
+      /* 输入项标签：块级显示，字体14px，500中粗，下外边距6px */
+      .field label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+      /* 输入框通用样式：宽度100%，高度48px，左右内边距16px，浅灰边框，圆角8px，字体15px，清除默认外边框，边框颜色过渡（0.2s），白色背景 */
+      .field input {
+        width: 100%;
+        height: 48px;
+        padding: 0 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 15px;
+        outline: none;
+        transition: border-color 0.2s;
+        background: #fff;
+      }
+      /* 输入框聚焦样式：边框颜色变为黑色，提升聚焦视觉反馈 */
+      .field input:focus {
+        border-color: #111;
+      }
+      /* 密码输入框外层容器：相对定位（用于包裹密码显隐按钮） */
+      .field .input-wrap {
+        position: relative;
+      }
+      /* 密码输入框：右内边距44px（为显隐按钮预留空间） */
+      .field .input-wrap input {
+        padding-right: 44px;
+      }
+      /* 密码显隐按钮：绝对定位（右12px，垂直居中），层级2，清除背景/边框，鼠标指针为手型，浅灰文字，颜色过渡（0.2s），上下内边距4px */
+      .toggle-pw {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #9ca3af;
+        transition: color 0.2s;
+        padding: 4px;
+      }
+      /* 密码按钮hover：文字变为黑色，提升交互反馈 */
+      .toggle-pw:hover {
+        color: #111;
+      }
+      /* 按钮内svg图标：宽高20px，取消鼠标事件（避免点击图标无响应） */
+      .toggle-pw svg {
+        width: 20px;
+        height: 20px;
+        pointer-events: none;
+      }
+      /* 表单行容器：弹性布局（水平两端对齐、垂直居中），下外边距20px，记住密码+忘记密码行 */
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      /* 记住密码选项：弹性布局（间距8px），字体14px，鼠标手型 */
+      .row .remember {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      /* 记住密码复选框：宽高16px，选中颜色为黑色，鼠标手型 */
+      .row .remember input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #111;
+        cursor: pointer;
+      }
+      /* 忘记密码链接：字体14px，500中粗，黑色文字，清除下划线 */
+      .row a {
+        font-size: 14px;
+        font-weight: 500;
+        color: #111;
+        text-decoration: none;
+      }
+      /* 链接hover：添加下划线，标准链接交互 */
+      .row a:hover {
+        text-decoration: underline;
+      }
+      /* 登录按钮：相对定位，宽度100%，高度48px，圆角9999px（圆形），浅灰边框，白色背景，鼠标手型，隐藏溢出，字体16px，600粗体，黑色文字 */
+      .hover-btn {
+        position: relative;
+        width: 100%;
+        height: 48px;
+        border-radius: 9999px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        cursor: pointer;
+        overflow: hidden;
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+      }
+      /* 按钮默认文字：行内块，过渡动画（0.3s），实现hover位移 */
+      .hover-btn .label {
+        display: inline-block;
+        transition: all 0.3s;
+      }
+      /* 按钮hover遮罩：绝对定位（占满按钮），层级10，弹性布局（水平垂直居中、间距8px），黑色背景，白色文字，圆形圆角，透明度0，过渡（0.3s），hover时显示 */
+      .hover-btn .overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #111;
+        color: #fff;
+        border-radius: 9999px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      /* 按钮hover：默认文字右移48px+透明度0，隐藏 */
+      .hover-btn:hover .label {
+        transform: translateX(48px);
+        opacity: 0;
+      }
+      /* 按钮hover：遮罩透明度1，显示黑色背景的登录+箭头 */
+      .hover-btn:hover .overlay {
+        opacity: 1;
+      }
+      /* 分割线/注册链接：文本居中，上外边距32px，字体14px，浅灰文字 */
+      .divider {
+        text-align: center;
+        margin-top: 32px;
+        font-size: 14px;
+        color: #6b7280;
+      }
+      /* 注册链接：黑色文字，500中粗，清除下划线 */
+      .divider a {
+        color: #111;
+        font-weight: 500;
+        text-decoration: none;
+      }
+      /* 注册链接hover：添加下划线 */
+      .divider a:hover {
+        text-decoration: underline;
+      }
+      /* 箭头图标：宽高16px，登录按钮hover时的箭头 */
+      .arrow-icon {
+        width: 16px;
+        height: 16px;
+      }
+      /* 响应式媒体查询：屏幕宽度≤1024px（平板/手机） */
+      @media (max-width: 1024px) {
+        /* 主体：高度自适应，显示溢出（允许滚动），取消固定100vh */
+        body {
+          height: auto;
+          overflow: auto;
+        }
+        /* 页面容器：网格单列，高度自适应，最小高度100vh（保证占满屏幕） */
+        .page {
+          grid-template-columns: 1fr;
+          height: auto;
+          min-height: 100vh;
+        }
+        /* 左栏：内边距上24px、左右16px、下0，缩小内边距 */
+        .left {
+          padding: 24px 16px 0;
+        }
+        /* 卡通形象外层容器：高度220px，缩小高度 */
+        .characters-wrap {
+          height: 220px;
+        }
+        /* 卡通形象核心容器：缩放0.45倍，变换原点底部中心，适配小屏 */
+        .characters {
+          transform: scale(0.45);
+          transform-origin: bottom center;
+        }
+        /* 右栏：内边距上下24/40px，左右20px，缩小内边距 */
+        .right {
+          padding: 24px 20px 40px;
+        }
+        /* 表单头部：下外边距24px，缩小间距 */
+        .form-box .header {
+          margin-bottom: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 页面核心容器：左右分栏 -->
+    <div class="page">
+      <!-- 左栏：卡通形象交互区 -->
+      <div class="left">
+        <!-- 卡通形象外层包裹 -->
+        <div class="characters-wrap">
+          <!-- 卡通形象核心容器，绑定id用于JS获取 -->
+          <div class="characters" id="characters">
+            <!-- 紫色卡通形象，绑定id -->
+            <div class="char char-purple" id="purple">
+              <!-- 紫色形象眼睛容器，绑定id -->
+              <div class="eyes-wrap" id="purple-eyes">
+                <!-- 左眼：眼球，宽高18px，绑定id -->
+                <div
+                  class="eyeball"
+                  id="purple-eye-l"
+                  style="width: 18px; height: 18px"
+                >
+                  <!-- 左瞳孔：宽高7px -->
+                  <div class="pupil" style="width: 7px; height: 7px"></div>
+                </div>
+                <!-- 右眼：眼球，宽高18px，绑定id -->
+                <div
+                  class="eyeball"
+                  id="purple-eye-r"
+                  style="width: 18px; height: 18px"
+                >
+                  <!-- 右瞳孔：宽高7px -->
+                  <div class="pupil" style="width: 7px; height: 7px"></div>
+                </div>
+              </div>
+            </div>
+            <!-- 黑色卡通形象，绑定id -->
+            <div class="char char-black" id="black">
+              <!-- 黑色形象眼睛容器，绑定id -->
+              <div class="eyes-wrap" id="black-eyes">
+                <!-- 左眼：眼球，宽高16px，绑定id -->
+                <div
+                  class="eyeball"
+                  id="black-eye-l"
+                  style="width: 16px; height: 16px"
+                >
+                  <!-- 左瞳孔：宽高6px -->
+                  <div class="pupil" style="width: 6px; height: 6px"></div>
+                </div>
+                <!-- 右眼：眼球，宽高16px，绑定id -->
+                <div
+                  class="eyeball"
+                  id="black-eye-r"
+                  style="width: 16px; height: 16px"
+                >
+                  <!-- 右瞳孔：宽高6px -->
+                  <div class="pupil" style="width: 6px; height: 6px"></div>
+                </div>
+              </div>
+            </div>
+            <!-- 橙色卡通形象，绑定id -->
+            <div class="char char-orange" id="orange">
+              <!-- 橙色形象眼睛容器，绑定id（无眼球仅瞳孔） -->
+              <div class="eyes-wrap" id="orange-eyes">
+                <!-- 左瞳孔：宽高12px，pupil-only样式 -->
+                <div class="pupil-only" style="width: 12px; height: 12px"></div>
+                <!-- 右瞳孔：宽高12px，pupil-only样式 -->
+                <div class="pupil-only" style="width: 12px; height: 12px"></div>
+              </div>
+            </div>
+            <!-- 黄色卡通形象，绑定id -->
+            <div class="char char-yellow" id="yellow">
+              <!-- 黄色形象眼睛容器，绑定id（无眼球仅瞳孔） -->
+              <div class="eyes-wrap" id="yellow-eyes">
+                <!-- 左瞳孔：宽高12px，pupil-only样式 -->
+                <div class="pupil-only" style="width: 12px; height: 12px"></div>
+                <!-- 右瞳孔：宽高12px，pupil-only样式 -->
+                <div class="pupil-only" style="width: 12px; height: 12px"></div>
+              </div>
+              <!-- 黄色形象嘴巴，绑定id用于JS控制 -->
+              <div class="mouth" id="yellow-mouth"></div>
+            </div>
+          </div>
+        </div>
+        <!-- 左栏网格遮罩 -->
+        <div class="grid-overlay"></div>
+        <!-- 左栏模糊光斑1 -->
+        <div class="blob1"></div>
+        <!-- 左栏模糊光斑2 -->
+        <div class="blob2"></div>
+      </div>
+      <!-- 右栏：登录表单区 -->
+      <div class="right">
+        <!-- 表单盒子 -->
+        <div class="form-box">
+          <!-- 表单头部 -->
+          <div class="header">
+            <h1>欢迎回来！</h1>
+            <p>请输入你的登录信息</p>
+          </div>
+          <!-- 登录表单：绑定id，提交事件返回false（阻止默认提交） -->
+          <form id="loginForm" onsubmit="return false;">
+            <!-- 邮箱输入项 -->
+            <div class="field">
+              <label for="email">邮箱</label
+              ><input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autocomplete="off" <!-- 关闭自动补全，提升体验 -->
+              />
+            </div>
+            <!-- 密码输入项 -->
+            <div class="field">
+              <label for="password">密码</label>
+              <!-- 密码输入框外层：相对定位，包裹显隐按钮 -->
+              <div class="input-wrap">
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" <!-- 密码占位符为圆点 -->
+                />
+                <!-- 密码显隐按钮：绑定id，aria-label适配无障碍 -->
+                <button
+                  type="button"
+                  class="toggle-pw"
+                  id="togglePw"
+                  aria-label="Toggle password visibility"
+                >
+                  <!-- 显示眼睛图标：绑定id，默认显示 -->
+                  <svg
+                    id="eyeIcon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                    /></svg
+                  >
+                  <!-- 隐藏眼睛图标：绑定id，默认隐藏（display:none） -->
+                  <svg
+                    id="eyeOffIcon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    style="display: none"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12c1.292 4.338 5.31 7.5 10.066 7.5.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- 记住密码+忘记密码行 -->
+            <div class="row">
+              <label class="remember"
+                ><input type="checkbox" />30天内记住我</label
+              ><a href="#">忘记密码？</a>
+            </div>
+            <!-- 登录按钮：hover动效 -->
+            <button type="submit" class="hover-btn">
+              <!-- 按钮默认文字 -->
+              <span class="label">登 录</span>
+              <!-- 按钮hover遮罩：登录+箭头 -->
+              <div class="overlay">
+                <span>登 录</span
+                ><svg
+                  class="arrow-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                  />
+                </svg>
+              </div>
+            </button>
+          </form>
+          <!-- 注册链接分割线 -->
+          <div class="divider">还没有账号？<a href="#">立即注册</a></div>
+        </div>
+      </div>
+    </div>
+    <!-- 原生JS脚本：实现所有交互动效 -->
+    <script>
+      // 初始化鼠标坐标：x/y轴初始值0
+      let mouseX = 0,
+        mouseY = 0;
+      // 是否正在输入：表单聚焦状态，初始false
+      let isTyping = false;
+      // 是否显示密码：密码显隐状态，初始false（隐藏）
+      let showPassword = false;
+      // 密码长度：记录密码输入框字符数，初始0
+      let passwordLen = 0;
+      // 眨眼状态：紫色/黑色形象是否眨眼，初始false
+      let purpleBlink = false,
+        blackBlink = false;
+      // 对视状态：表单聚焦时形象对视，初始false
+      let lookingAtEachOther = false;
+      // 偷看状态：紫色形象是否偷看显隐的密码，初始false
+      let purplePeeking = false;
+
+      // 获取所有卡通形象DOM元素：通过id绑定，方便后续操作
+      const $purple = document.getElementById("purple");
+      const $black = document.getElementById("black");
+      const $orange = document.getElementById("orange");
+      const $yellow = document.getElementById("yellow");
+      // 获取所有眼睛容器DOM元素
+      const $purpleEyes = document.getElementById("purple-eyes");
+      const $blackEyes = document.getElementById("black-eyes");
+      const $orangeEyes = document.getElementById("orange-eyes");
+      const $yellowEyes = document.getElementById("yellow-eyes");
+      // 获取黄色形象嘴巴DOM元素
+      const $yellowMouth = document.getElementById("yellow-mouth");
+      // 获取表单输入框DOM元素
+      const $emailInput = document.getElementById("email");
+      const $passwordInput = document.getElementById("password");
+      // 获取密码显隐按钮及图标DOM元素
+      const $togglePw = document.getElementById("togglePw");
+      const $eyeIcon = document.getElementById("eyeIcon");
+      const $eyeOffIcon = document.getElementById("eyeOffIcon");
+
+      // 鼠标移动事件监听：实时更新鼠标坐标mouseX/mouseY
+      document.addEventListener("mousemove", (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      // 邮箱输入框聚焦事件：标记为正在输入，触发形象对视
+      $emailInput.addEventListener("focus", () => {
+        isTyping = true;
+        triggerLookAtEachOther();
+      });
+      // 邮箱输入框失焦事件：取消正在输入，取消对视
+      $emailInput.addEventListener("blur", () => {
+        isTyping = false;
+        lookingAtEachOther = false;
+      });
+
+      // 密码输入框输入事件：实时更新密码长度passwordLen
+      $passwordInput.addEventListener("input", () => {
+        passwordLen = $passwordInput.value.length;
+      });
+      // 密码输入框聚焦事件：标记为正在输入，触发形象对视
+      $passwordInput.addEventListener("focus", () => {
+        isTyping = true;
+        triggerLookAtEachOther();
+      });
+      // 密码输入框失焦事件：取消正在输入，取消对视
+      $passwordInput.addEventListener("blur", () => {
+        isTyping = false;
+        lookingAtEachOther = false;
+      });
+
+      // 密码显隐按钮点击事件：切换密码显隐状态
+      $togglePw.addEventListener("click", () => {
+        // 取反显隐状态
+        showPassword = !showPassword;
+        // 切换输入框类型：password（隐藏）/text（显示）
+        $passwordInput.type = showPassword ? "text" : "password";
+        // 切换眼睛图标显示/隐藏
+        $eyeIcon.style.display = showPassword ? "none" : "";
+        $eyeOffIcon.style.display = showPassword ? "" : "none";
+      });
+
+      // 触发对视函数：设置对视状态为true，800ms后取消（短时间对视动效）
+      function triggerLookAtEachOther() {
+        lookingAtEachOther = true;
+        setTimeout(() => {
+          lookingAtEachOther = false;
+        }, 800);
+      }
+
+      // 调度眨眼函数：随机延迟后触发眨眼，完成后重新调度（循环眨眼）
+      // setter：传入更新眨眼状态的回调函数
+      function scheduleBlink(setter) {
+        // 随机延迟：3000-7000ms（3-7秒），模拟自然眨眼
+        const delay = Math.random() * 4000 + 3000;
+        setTimeout(() => {
+          setter(true); // 开始眨眼：设置为true
+          setTimeout(() => {
+            setter(false); // 结束眨眼：150ms后设置为false
+            scheduleBlink(setter); // 重新调度，循环执行
+          }, 150);
+        }, delay);
+      }
+      // 初始化紫色形象眨眼调度
+      scheduleBlink((v) => {
+        purpleBlink = v;
+      });
+      // 初始化黑色形象眨眼调度
+      scheduleBlink((v) => {
+        blackBlink = v;
+      });
+
+      // 调度偷看函数：密码显示且有内容时，随机延迟后触发偷看
+      function schedulePeek() {
+        // 条件：密码有长度 + 密码显示，才触发偷看
+        if (passwordLen > 0 && showPassword) {
+          // 随机延迟：2000-5000ms（2-5秒）
+          const delay = Math.random() * 3000 + 2000;
+          setTimeout(() => {
+            // 再次判断条件（防止期间状态变化）
+            if (passwordLen > 0 && showPassword) {
+              purplePeeking = true; // 开始偷看
+              setTimeout(() => {
+                purplePeeking = false; // 800ms后结束偷看
+                schedulePeek(); // 重新调度，循环偷看
+              }, 800);
+            }
+          }, delay);
+        }
+      }
+
+      // 偷看轮询定时器：1秒检查一次，满足条件则启动偷看调度
+      const peekInterval = setInterval(() => {
+        if (passwordLen > 0 && showPassword && !purplePeeking) schedulePeek();
+      }, 1000);
+
+      // 计算位置函数：根据元素位置和鼠标坐标，计算形象的倾斜/眼睛位移参数
+      // el：传入需要计算的DOM元素
+      function calcPos(el) {
+        // 获取元素的可视区域位置信息
+        const rect = el.getBoundingClientRect();
+        // 计算元素中心x坐标，y坐标（元素高度1/3处，眼睛位置）
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 3;
+        // 计算鼠标与元素中心的x/y轴差值
+        const dx = mouseX - cx;
+        const dy = mouseY - cy;
+        // 返回计算结果：限制取值范围，避免动效过度
+        return {
+          faceX: Math.max(-15, Math.min(15, dx / 20)), // 眼睛x位移，范围-15~15
+          faceY: Math.max(-10, Math.min(10, dy / 30)), // 眼睛y位移，范围-10~10
+          bodySkew: Math.max(-6, Math.min(6, -dx / 120)), // 身体倾斜角度，范围-6~6
+        };
+      }
+
+      // 眼球瞳孔位移计算：计算瞳孔跟随鼠标的位移，支持强制位移（对视/偷看时）
+      // el：眼球元素，maxDist：最大位移距离，forceX/forceY：强制位移坐标（可选）
+      function eyePupilOffset(el, maxDist, forceX, forceY) {
+        // 如果传入强制位移，直接返回（对视/偷看/显密码时用）
+        if (forceX !== undefined && forceY !== undefined)
+          return { x: forceX, y: forceY };
+        // 否则根据鼠标坐标计算位移
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = mouseX - cx;
+        const dy = mouseY - cy;
+        // 计算鼠标与眼球的距离，限制最大距离（避免瞳孔移出眼球）
+        const dist = Math.min(Math.sqrt(dx * dx + dy * dy), maxDist);
+        // 计算角度
+        const angle = Math.atan2(dy, dx);
+        // 根据角度和距离，计算x/y轴位移
+        return { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist };
+      }
+
+      // 核心渲染函数：实时更新所有形象的位置/眼睛/眨眼/偷看等动效，通过requestAnimationFrame实现帧动画
+      function render() {
+        // 计算每个形象的位置参数：倾斜/眼睛位移
+        const pp = calcPos($purple);
+        const bp = calcPos($black);
+        const op = calcPos($orange);
+        const yp = calcPos($yellow);
+        // 状态判断：密码有内容且隐藏
+        const isHiding = passwordLen > 0 && !showPassword;
+        // 状态判断：密码有内容且显示
+        const isShowingPw = passwordLen > 0 && showPassword;
+
+        // 紫色形象样式更新：根据不同状态调整倾斜/高度
+        if (isShowingPw) {
+          // 密码显示：取消倾斜，恢复原高度
+          $purple.style.transform = "skewX(0deg)";
+          $purple.style.height = "400px";
+        } else if (isTyping || isHiding) {
+          // 正在输入/密码隐藏：向左倾斜+右移40px，高度增加到440px（探头状态）
+          $purple.style.transform = `skewX(${(pp.bodySkew || 0) - 12}deg) translateX(40px)`;
+          $purple.style.height = "440px";
+        } else {
+          // 默认状态：跟随鼠标倾斜
+          $purple.style.transform = `skewX(${pp.bodySkew || 0}deg)`;
+          $purple.style.height = "400px";
+        }
+
+        // 紫色形象眨眼动效：获取左右眼球，根据眨眼状态修改高度（2px为眨眼，18px为正常）
+        const purpleEyeL = $purpleEyes.children[0];
+        const purpleEyeR = $purpleEyes.children[1];
+        purpleEyeL.style.height = purpleBlink ? "2px" : "18px";
+        purpleEyeR.style.height = purpleBlink ? "2px" : "18px";
+        // 紫色眼睛位移参数：默认undefined（跟随鼠标）
+        let pfx, pfy;
+        if (isShowingPw) {
+          // 密码显示：固定眼睛位置，偷看时调整瞳孔位移
+          $purpleEyes.style.left = "20px";
+          $purpleEyes.style.top = "35px";
+          pfx = purplePeeking ? 4 : -4;
+          pfy = purplePeeking ? 5 : -4;
+        } else if (lookingAtEachOther) {
+          // 对视状态：固定眼睛位置，瞳孔对视位移
+          $purpleEyes.style.left = "55px";
+          $purpleEyes.style.top = "65px";
+          pfx = 3;
+          pfy = 4;
+        } else {
+          // 默认状态：眼睛跟随鼠标位移
+          $purpleEyes.style.left = 45 + pp.faceX + "px";
+          $purpleEyes.style.top = 40 + pp.faceY + "px";
+          pfx = undefined;
+          pfy = undefined;
+        }
+        // 设置紫色形象瞳孔位移
+        setPupil(purpleEyeL, 5, pfx, pfy);
+        setPupil(purpleEyeR, 5, pfx, pfy);
+
+        // 黑色形象样式更新：根据不同状态调整倾斜
+        if (isShowingPw) {
+          // 密码显示：取消倾斜
+          $black.style.transform = "skewX(0deg)";
+        } else if (lookingAtEachOther) {
+          // 对视状态：向右倾斜+右移20px
+          $black.style.transform = `skewX(${(bp.bodySkew || 0) * 1.5 + 10}deg) translateX(20px)`;
+        } else if (isTyping || isHiding) {
+          // 正在输入/密码隐藏：跟随鼠标倾斜（放大1.5倍）
+          $black.style.transform = `skewX(${(bp.bodySkew || 0) * 1.5}deg)`;
+        } else {
+          // 默认状态：跟随鼠标倾斜
+          $black.style.transform = `skewX(${bp.bodySkew || 0}deg)`;
+        }
+
+        // 黑色形象眨眼动效：获取左右眼球，根据眨眼状态修改高度（2px为眨眼，16px为正常）
+        const blackEyeL = $blackEyes.children[0];
+        const blackEyeR = $blackEyes.children[1];
+        blackEyeL.style.height = blackBlink ? "2px" : "16px";
+        blackEyeR.style.height = blackBlink ? "2px" : "16px";
+        // 黑色眼睛位移参数：默认undefined（跟随鼠标）
+        let bfx, bfy;
+        if (isShowingPw) {
+          // 密码显示：固定眼睛位置，瞳孔左移
+          $blackEyes.style.left = "10px";
+          $blackEyes.style.top = "28px";
+          bfx = -4;
+          bfy = -4;
+        } else if (lookingAtEachOther) {
+          // 对视状态：固定眼睛位置，瞳孔上移
+          $blackEyes.style.left = "32px";
+          $blackEyes.style.top = "12px";
+          bfx = 0;
+          bfy = -4;
+        } else {
+          // 默认状态：眼睛跟随鼠标位移
+          $blackEyes.style.left = 26 + bp.faceX + "px";
+          $blackEyes.style.top = 32 + bp.faceY + "px";
+          bfx = undefined;
+          bfy = undefined;
+        }
+        // 设置黑色形象瞳孔位移
+        setPupil(blackEyeL, 4, bfx, bfy);
+        setPupil(blackEyeR, 4, bfx, bfy);
+
+        // 橙色形象样式更新：密码显示则取消倾斜，否则跟随鼠标倾斜
+        $orange.style.transform = isShowingPw
+          ? "skewX(0deg)"
+          : `skewX(${op.bodySkew || 0}deg)`;
+        // 橙色眼睛位移参数：默认undefined（跟随鼠标）
+        let ofx, ofy;
+        if (isShowingPw) {
+          // 密码显示：固定眼睛位置，瞳孔左移
+          $orangeEyes.style.left = "50px";
+          $orangeEyes.style.top = "85px";
+          ofx = -5;
+          ofy = -4;
+        } else {
+          // 默认状态：眼睛跟随鼠标位移
+          $orangeEyes.style.left = 82 + (op.faceX || 0) + "px";
+          $orangeEyes.style.top = 90 + (op.faceY || 0) + "px";
+          ofx = undefined;
+          ofy = undefined;
+        }
+        // 设置橙色形象瞳孔位移（无眼球，直接设置pupil-only）
+        setPupilOnly($orangeEyes.children[0], 5, ofx, ofy);
+        setPupilOnly($orangeEyes.children[1], 5, ofx, ofy);
+
+        // 黄色形象样式更新：密码显示则取消倾斜，否则跟随鼠标倾斜
+        $yellow.style.transform = isShowingPw
+          ? "skewX(0deg)"
+          : `skewX(${yp.bodySkew || 0}deg)`;
+        // 黄色眼睛位移参数：默认undefined（跟随鼠标）
+        let yfx, yfy;
+        if (isShowingPw) {
+          // 密码显示：固定眼睛和嘴巴位置，瞳孔左移
+          $yellowEyes.style.left = "20px";
+          $yellowEyes.style.top = "35px";
+          $yellowMouth.style.left = "10px";
+          $yellowMouth.style.top = "88px";
+          yfx = -5;
+          yfy = -4;
+        } else {
+          // 默认状态：眼睛和嘴巴跟随鼠标位移
+          $yellowEyes.style.left = 52 + (yp.faceX || 0) + "px";
+          $yellowEyes.style.top = 40 + (yp.faceY || 0) + "px";
+          $yellowMouth.style.left = 40 + (yp.faceX || 0) + "px";
+          $yellowMouth.style.top = 88 + (yp.faceY || 0) + "px";
+          yfx = undefined;
+          yfy = undefined;
+        }
+        // 设置黄色形象瞳孔位移（无眼球，直接设置pupil-only）
+        setPupilOnly($yellowEyes.children[0], 5, yfx, yfy);
+        setPupilOnly($yellowEyes.children[1], 5, yfx, yfy);
+
+        // 请求下一帧动画：循环执行render，实现实时动效
+        requestAnimationFrame(render);
+      }
+
+      // 设置瞳孔位移函数：给有眼球的形象（紫色/黑色）设置瞳孔位移
+      // eyeEl：眼球元素，maxDist：最大位移，forceX/forceY：强制位移
+      function setPupil(eyeEl, maxDist, forceX, forceY) {
+        // 获取瞳孔元素
+        const pupil = eyeEl.querySelector(".pupil");
+        if (!pupil) return; // 无瞳孔则直接返回
+        // 计算瞳孔位移
+        const o = eyePupilOffset(eyeEl, maxDist, forceX, forceY);
+        // 设置瞳孔位移变换
+        pupil.style.transform = `translate(${o.x}px, ${o.y}px)`;
+      }
+
+      // 设置纯瞳孔位移函数：给无眼球的形象（橙色/黄色）设置瞳孔位移
+      // el：瞳孔元素，maxDist：最大位移，forceX/forceY：强制位移
+      function setPupilOnly(el, maxDist, forceX, forceY) {
+        // 计算瞳孔位移
+        const o = eyePupilOffset(el, maxDist, forceX, forceY);
+        // 设置瞳孔位移变换
+        el.style.transform = `translate(${o.x}px, ${o.y}px)`;
+      }
+
+      // 初始化渲染：启动帧动画，触发第一次render执行
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>
